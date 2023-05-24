@@ -1,7 +1,7 @@
 import numpy as np
 
 class GBM:
-    def __init__(self, S0, mu, sigma, r, values_per_year = 365):
+    def __init__(self, S0, mu, sigma, r, values_per_year = 50):
         self.S0 = S0
         self.mu = mu
         self.sigma = sigma

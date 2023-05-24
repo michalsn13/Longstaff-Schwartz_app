@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import norm
 
 def weights(x_curr_mesh, x_next_mesh, underlying, t):
     b = x_curr_mesh.shape[0]
@@ -14,6 +15,7 @@ def stochastic_mesh(option, b):
     dt = 1 / option.underlying.values_per_year
     time = np.tile(np.arange(dt, option.T + dt, dt), (b,1))
     _, mesh = option.underlying.simulate_Q(b, option.T)
+    #mesh = option.underlying.S0 * np.array([np.exp((option.underlying.r - 0.5 * option.underlying.sigma**2) * i * dt +  norm.ppf(np.arange(2 * b -1, 0, -2)/(2 * b), loc = 0, scale = option.underlying.sigma * np.sqrt(i * dt))) for i in range(1, int(option.underlying.values_per_year * option.T) + 1)]).T
     condition = option.barrier_ind_func(mesh, time)
     Q = option.payoff_func(mesh, time) * condition
     exercise_bool = np.ones(Q.shape) * (Q > 0)
