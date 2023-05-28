@@ -7,6 +7,7 @@ sys.path.append('..')
 from underlying import GBM
 from option import Option
 from stochastic_mesh_func import *
+from Longstaff_Schwartz import LS
 
 class Index(View):
     def get(self, request):
@@ -44,6 +45,14 @@ class Index(View):
                 sign = (-1)**((direction == 'up')==(outcome == 'in'))
                 barrier_func = lambda X, t : sign*X < sign*form_dict['barrier']
                 barrier_out = outcome == 'out'
+                #def barrier_func_ls(X,t):
+                #    X_temp = np.hstack((X,np.ones(X.shape[0],1)))
+                #    barrier = form_dict['barrier']
+                #    if outcome == 'out':
+                #        return t < t[np.ix_(np.arange(X.shape[0]),np.argmax(X_temp>=barrier,axis=1))] 
+                #    else:
+                #        return t >= t[np.ix_(np.arange(X.shape[0]),np.argmax(X_temp>=barrier,axis=1))] 
+                #barrier_func_ls = lambda X, t: t < t[:,np.argmax(X>=barrier)]
             else:
                 barrier_func = lambda X, t : True
                 barrier_out = False
@@ -59,8 +68,11 @@ class Index(View):
             put = Option(underlying, payoff_func_put, T, barrier_func, barrier_out)
             V_sm_call, _, _, _ = stochastic_mesh(call, 1000)
             V_sm_put, _, _, _ = stochastic_mesh(put, 1000)
+            LS_call, _, _, _ = LS(call,int(1e5))
+            LS_put, _, _, _ = LS(put,int(1e5))
             context = {'output':{
-                                'Stochastic Mesh':{'price_call':round(V_sm_call, rounding), 'price_put':round(V_sm_put, rounding)}
+                                'Stochastic Mesh':{'price_call':round(V_sm_call, rounding), 'price_put':round(V_sm_put, rounding)},
+                                'Longstaff-Schwartz':{'price_call':round(LS_call, rounding), 'price_put':round(LS_put, rounding)}
                                 },
                        'form':form
                       }

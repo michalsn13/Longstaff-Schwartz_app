@@ -18,9 +18,11 @@ class GBM:
             B = np.array([norm.ppf(np.arange(2 * size -1, 0, -2)/(2 * size), loc = 0, scale = np.sqrt(i)) for i in time_moments]).T
             sims = self.S0 * np.array([np.exp((self.mu - 0.5 * self.sigma**2) * i +  norm.ppf(np.arange(2 * size -1, 0, -2)/(2 * size), loc = 0, scale = self.sigma * np.sqrt(i))) for i in time_moments]).T
         else:
-            Sigma=np.minimum(np.tile(time_moments,(len(time_moments),1)),np.tile(time_moments.reshape(-1,1),(1,len(time_moments))))
-            B = np.random.multivariate_normal(size=size, mean= np.zeros(len(time_moments)), cov = Sigma)
-            sims = self.S0 * np.exp((self.mu - 0.5 * self.sigma**2) * time_moments + self.sigma * B)
+            n = int(size/2)
+            W = np.random.normal(size=(n,len(time_moments)))
+            W = np.cumsum(np.sqrt(dt)*W,axis=1)
+            W = np.vstack((W,-W))
+            sims = self.S0*np.exp((self.mu-self.sigma**2/2)*time_moments.reshape((1,-1)) + self.sigma*W)
         if self.div > 0:
             div_interval = 1/self.div_freq
             if div_interval == 0:
@@ -38,9 +40,11 @@ class GBM:
             B = np.array([norm.ppf(np.arange(2 * size -1, 0, -2)/(2 * size), loc = 0, scale = np.sqrt(i)) for i in time_moments]).T
             sims = self.S0 * np.array([np.exp((self.r - 0.5 * self.sigma**2) * i +  norm.ppf(np.arange(2 * size -1, 0, -2)/(2 * size), loc = 0, scale = self.sigma * np.sqrt(i))) for i in time_moments]).T
         else:
-            Sigma=np.minimum(np.tile(time_moments,(len(time_moments),1)),np.tile(time_moments.reshape(-1,1),(1,len(time_moments))))
-            B = np.random.multivariate_normal(size=size, mean= np.zeros(len(time_moments)), cov = Sigma)
-            sims = self.S0 * np.exp((self.r - 0.5 * self.sigma**2) * time_moments + self.sigma * B)
+            n = int(size/2)
+            W = np.random.normal(size=(n,len(time_moments)))
+            W = np.cumsum(np.sqrt(dt)*W,axis=1)
+            W = np.vstack((W,-W))
+            sims = self.S0*np.exp((self.r-self.sigma**2/2)*time_moments.reshape((1,-1)) + self.sigma*W)
         if self.div > 0:
             div_interval = 1/self.div_freq
             if div_interval == 0:
