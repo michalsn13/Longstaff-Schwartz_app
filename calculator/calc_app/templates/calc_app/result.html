@@ -3,21 +3,24 @@
 <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Go back</a>
 <div class="row mt-5">
     <div class="col-12 col-md-6 mx-md-auto">
-        <h1>American {{ input.option_type }}(K = {{ input.K }}, T = {{ input.T }}) with S0={{ input.S0 }}</h1>
+        <h1>American {{ input.barrier_type }}(K = {{ input.K }}, T = {{ input.T }}) with S0={{ input.S0 }}</h1>
         <h3>Prices for different methods</h3>
         <div class="mt-5">
             <table class="table">
                 <thread>
                     <tr>
                         <th scope="col">Method</th>
-                        <th scope="col">Price</th>
+                        <th scope="col">Call</th>
+                        <th scope="col">Put</th>
+
                     </tr>
                 </thread>
                 <tbody>
                 {% for key, value in output.items %}
                     <tr>
                         <th scope="row">{{ key }}</th>
-                        <th scope="row">{{ value.price }}</th>
+                        <th scope="row">{{ value.price_call }}</th>
+                        <th scope="row">{{ value.price_put }}</th>
                     </tr>
                 {% endfor %}
                 </tbody>
