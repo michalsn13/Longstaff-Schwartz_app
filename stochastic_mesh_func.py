@@ -32,5 +32,7 @@ def stochastic_mesh(option, b, quantiles = True):
         Q_new = (w * Q[:,-i]).mean(axis = 1) * condition
         exercise_bool[:,-(i+1)] = condition * (Q[:,-(i+1)] > (Q_new * np.exp(-option.underlying.r * dt))) + (-1) * (1 - condition)
         Q[:,-(i+1)] = np.maximum(Q[:,-(i+1)] , Q_new * np.exp(-option.underlying.r * dt))
-    V = np.maximum(option.payoff_func(option.underlying.S0, 0), Q[:,0].mean() * np.exp(-option.underlying.r * dt))
+    condition = option.barrier_ind_func(option.underlying.S0, 0)
+    Q_new = Q[:,0].mean() * (condition if option.barrier_out else True)
+    V = np.maximum(option.payoff_func(option.underlying.S0, 0) * condition, Q_new * np.exp(-option.underlying.r * dt))
     return (V, exercise_bool, mesh, Q)

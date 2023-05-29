@@ -27,7 +27,7 @@
                 <tbody>
                 {% for key, value in output.items %}
                     <tr>
-                        <th scope="row">{{ key }}</th>
+                        <th scope="row"><a href="{{ value.href }}">{{ key }}</a></th>
                         <th scope="row">{{ value.price_call }}</th>
                         <th scope="row">{{ value.price_put }}</th>
                     </tr>

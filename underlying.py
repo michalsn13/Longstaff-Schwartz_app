@@ -22,7 +22,7 @@ class GBM:
             W = np.random.normal(size=(n,len(time_moments)))
             W = np.cumsum(np.sqrt(dt)*W,axis=1)
             W = np.vstack((W,-W))
-            sims = self.S0*np.exp((self.mu-self.sigma**2/2)*time_moments.reshape((1,-1)) + self.sigma*W)
+            sims = self.S0*np.exp((self.mu - 0.5 * self.sigma**2)*time_moments.reshape((1,-1)) + self.sigma*W)
         if self.div > 0:
             div_interval = 1/self.div_freq
             if div_interval == 0:
@@ -44,7 +44,7 @@ class GBM:
             W = np.random.normal(size=(n,len(time_moments)))
             W = np.cumsum(np.sqrt(dt)*W,axis=1)
             W = np.vstack((W,-W))
-            sims = self.S0*np.exp((self.r-self.sigma**2/2)*time_moments.reshape((1,-1)) + self.sigma*W)
+            sims = self.S0*np.exp((self.r - 0.5 * self.sigma**2)*time_moments.reshape((1,-1)) + self.sigma*W)
         if self.div > 0:
             div_interval = 1/self.div_freq
             if div_interval == 0:

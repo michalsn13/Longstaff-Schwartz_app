@@ -71,10 +71,10 @@ class Index(View):
             LS_call, _, _, _ = LS(call,int(1e5))
             LS_put, _, _, _ = LS(put,int(1e5))
             context = {'output':{
-                                'Stochastic Mesh':{'price_call':round(V_sm_call, rounding), 'price_put':round(V_sm_put, rounding)},
-                                'Longstaff-Schwartz':{'price_call':round(LS_call, rounding), 'price_put':round(LS_put, rounding)}
+                                'Stochastic Mesh':{'href':'sm', 'price_call':round(V_sm_call, rounding), 'price_put':round(V_sm_put, rounding)},
+                                'Longstaff-Schwartz':{'href':'ls', 'price_call':round(LS_call, rounding), 'price_put':round(LS_put, rounding)}
                                 },
                        'form':form
                       }
             return render(request, 'calc_app/index.html', context)
-        return render(request, 'home/index.html', {'form':form})
+        return render(request, 'calc_app/index.html', {'form':form})
