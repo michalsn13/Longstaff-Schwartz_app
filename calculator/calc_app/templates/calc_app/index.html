@@ -5,9 +5,9 @@
 <div class="row mt-10">
     <div class="col-12 col-md-6 mx-md-auto">
         <h1>American Options price calculator </h1>
-        <form method="POST" onsubmt="return false">
+        <form method="POST">
             {% csrf_token %}
-            {{ form| crispy }}
+            {{ form | crispy }}
             <p>*- obligatory</p>
             <button class="btn btn-primary" type="submit">Calculate</button>
         </form>
@@ -21,15 +21,14 @@
                         <th scope="col">Method</th>
                         <th scope="col">Call</th>
                         <th scope="col">Put</th>
-
                     </tr>
                 </thread>
                 <tbody>
-                {% for key, value in output.items %}
+                {% for value in output.values %}
                     <tr>
-                        <th scope="row"><a href="{{ value.href }}">{{ key }}</a></th>
-                        <th scope="row">{{ value.price_call }}</th>
-                        <th scope="row">{{ value.price_put }}</th>
+                        <th scope="row"><a href="{{ value.href }}">{{ value.name }}</a></th>
+                        <th scope="row">{{ value.call.price }}</th>
+                        <th scope="row">{{ value.put.price }}</th>
                     </tr>
                 {% endfor %}
                 </tbody>

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views import View
 from .forms import OptionForm
-
+from .visual_funcs import SM_graphs
 import sys
 sys.path.append('..')
 from underlying import GBM
@@ -66,15 +66,21 @@ class Index(View):
             payoff_func_put = lambda X, t: np.maximum(K-X, 0)
             call = Option(underlying, payoff_func_call, T, barrier_func, barrier_out)
             put = Option(underlying, payoff_func_put, T, barrier_func, barrier_out)
-            V_sm_call, _, _, _ = stochastic_mesh(call, 1000)
-            V_sm_put, _, _, _ = stochastic_mesh(put, 1000)
+            V_sm_call, bools_call, mesh_call, Q_call = stochastic_mesh(call, 1000)
+            V_sm_put, bools_put, mesh_put, Q_put = stochastic_mesh(put, 1000)
             LS_call, _, _, _ = LS(call,int(1e5))
             LS_put, _, _, _ = LS(put,int(1e5))
             context = {'output':{
-                                'Stochastic Mesh':{'href':'sm', 'price_call':round(V_sm_call, rounding), 'price_put':round(V_sm_put, rounding)},
-                                'Longstaff-Schwartz':{'href':'ls', 'price_call':round(LS_call, rounding), 'price_put':round(LS_put, rounding)}
+                                'stochastic_mesh':{'name':'Stochastic Mesh', 'href':'sm', 
+                                                    'call':{'price':round(V_sm_call, rounding), 'plots': SM_graphs(V_sm_call, bools_call, mesh_call, Q_call, T)}, 
+                                                    'put':{'price':round(V_sm_put, rounding), 'plots': SM_graphs(V_sm_put, bools_put, mesh_put, Q_put, T)}
+                                                  },
+                                'longstaff-schwartz':{'name':'Longstaff-Schwartz', 'href':'ls', 
+                                                      'call':{'price':round(LS_call, rounding)}, 
+                                                      'put':{'price':round(LS_put, rounding)}
+                                                     },
                                 },
-                       'form':form
+                        'form':form
                       }
             return render(request, 'calc_app/index.html', context)
         return render(request, 'calc_app/index.html', {'form':form})

@@ -2,5 +2,7 @@
 {% load crispy_forms_tags %}
 {% block content %}
 <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
-<h1>No easter eggs here</h1>
+<h1>Plots should be there:</h1>
+{{ output.call.plots | safe }}
+{{ output.put.plots | safe }}
 {% endblock content %}
