@@ -8,6 +8,7 @@ from underlying import GBM
 from option import Option
 from stochastic_mesh_func import *
 from Longstaff_Schwartz import LS
+from finite_difference import FD
 
 class Index(View):
     def get(self, request):
@@ -45,15 +46,18 @@ class Index(View):
                 sign = (-1)**((direction == 'up')==(outcome == 'in'))
                 barrier_func = lambda X, t : sign*X < sign*form_dict['barrier']
                 barrier_out = outcome == 'out'
-                #def barrier_func_ls(X,t):
-                #    X_temp = np.hstack((X,np.ones(X.shape[0],1)))
-                #    barrier = form_dict['barrier']
-                #    if outcome == 'out':
-                #        return t < t[np.ix_(np.arange(X.shape[0]),np.argmax(X_temp>=barrier,axis=1))] 
-                #    else:
-                #        return t >= t[np.ix_(np.arange(X.shape[0]),np.argmax(X_temp>=barrier,axis=1))] 
-                #barrier_func_ls = lambda X, t: t < t[:,np.argmax(X>=barrier)]
+
+                barrier = form_dict['barrier']
+                def barrier_func_ls(X,t):
+                    X = np.hstack((S0*np.ones((X.shape[0],1)),X))
+                    tn = np.hstack((np.zeros((X.shape[0],1)),t))
+                    sign1 = (-1)**(direction == 'up')
+                    sign2 = (-1)**(outcome == 'in')
+                    t_out_of_bar = tn[0,np.argmax(sign1*X < sign1*barrier,axis=1)]
+                    t_out_of_bar[t_out_of_bar==0] = 1e9
+                    return sign2*t < sign2*t_out_of_bar.reshape((-1,1))
             else:
+                barrier_func_ls = lambda X, t : True
                 barrier_func = lambda X, t : True
                 barrier_out = False
             rounding = int(form_dict['rounding'])
@@ -64,21 +68,27 @@ class Index(View):
                 underlying = GBM(S0, mu, sigma, r, div = div, div_freq = div_freq, next_div_moment = next_div_moment)
             payoff_func_call = lambda X, t: np.maximum(X-K, 0)
             payoff_func_put = lambda X, t: np.maximum(K-X, 0)
-            call = Option(underlying, payoff_func_call, T, barrier_func, barrier_out)
-            put = Option(underlying, payoff_func_put, T, barrier_func, barrier_out)
-            V_sm_call, bools_call, mesh_call, Q_call = stochastic_mesh(call, 1000)
-            V_sm_put, bools_put, mesh_put, Q_put = stochastic_mesh(put, 1000)
-            LS_call, _, _, _ = LS(call,int(1e5))
-            LS_put, _, _, _ = LS(put,int(1e5))
+            
+            V_sm_call, bools_call, mesh_call, Q_call = stochastic_mesh(Option(underlying, payoff_func_call, T, barrier_func, barrier_out), 1000)
+            V_sm_put, bools_put, mesh_put, Q_put = stochastic_mesh(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), 1000)
+            LS_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
+            LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
+            FD_call, _, _, _ = FD(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),400)
+            FD_put, _, _, _ = FD(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),400)
+
             context = {'output':{
                                 'stochastic_mesh':{'name':'Stochastic Mesh', 'href':'sm', 
-                                                    'call':{'price':round(V_sm_call, rounding), 'plots': SM_graphs(V_sm_call, bools_call, mesh_call, Q_call, T)}, 
-                                                    'put':{'price':round(V_sm_put, rounding), 'plots': SM_graphs(V_sm_put, bools_put, mesh_put, Q_put, T)}
+                                                    'call':{'price':round(V_sm_call, rounding)},#, 'plots': SM_graphs(V_sm_call, bools_call, mesh_call, Q_call, T)}, 
+                                                    'put':{'price':round(V_sm_put, rounding)}#, 'plots': SM_graphs(V_sm_put, bools_put, mesh_put, Q_put, T)}
                                                   },
                                 'longstaff-schwartz':{'name':'Longstaff-Schwartz', 'href':'ls', 
                                                       'call':{'price':round(LS_call, rounding)}, 
                                                       'put':{'price':round(LS_put, rounding)}
                                                      },
+                                'finite-difference':{'name':'Finite Difference', 'href':'fd',
+                                                     'call':{'price':round(FD_call,rounding)},
+                                                     'put':{'price':round(FD_put,rounding)}
+                                                    }
                                 },
                         'form':form
                       }

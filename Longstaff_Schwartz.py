@@ -51,11 +51,12 @@ def LS(option, b, T_idx=np.nan ,poly_type='Laguerre'):
     Excercise[:,-1] = 1
     for i,t in enumerate(T_idx[1:]):
         pP = Pay[:,t]>0
-        X = poly(S[pP,t,:],poly_type=poly_type)
-        Y = vP[pP]
-        E_con = LinearRegression().fit(X, Y).predict(X)
-        Excercise[pP,t] = E_con < Pay[pP,t]
-        vP[Excercise[:,t]] = Pay[Excercise[:,t],t]
+        if pP.sum() != 0:
+            X = poly(S[pP,t,:],poly_type=poly_type)
+            Y = vP[pP]
+            E_con = LinearRegression().fit(X, Y).predict(X)
+            Excercise[pP,t] = E_con < Pay[pP,t]
+            vP[Excercise[:,t]] = Pay[Excercise[:,t],t]
         vP *= v[i] 
 
     when = np.argmax(Excercise,axis=1) 
