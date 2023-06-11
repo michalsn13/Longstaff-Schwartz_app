@@ -30,6 +30,7 @@ def FD(option,n=400,dt=np.nan,american=True):
     Exc = np.zeros((n,k))
 
     barr = option.barrier_ind_func(S,np.tile(Time,(n,1)))
+    if np.all(barr == True): barr = np.ones(S.shape)
     #print(np.tile(Time,(n,1)))
     #print(S)
     #print(S.shape,np.tile(Time,(n,1)).shape)
