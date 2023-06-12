@@ -1,50 +1,47 @@
-
 import numpy as np
 
-def prob(option, nbin,b=5e4):
+def prob(option, nbin,b):
   T = option.T
   sims = option.underlying.simulate_Q(b,T)
-  length = np.shape(sims)[1]-1 #how long a sim is, but without the start since its not simulated
-  inds = np.argsort(np.argsort(sims, axis = 0, kind = 'mergesort'), axis = 0, kind = 'mergesort')
-  #print("inds is done") #we're about halfway done if this prints
-  inds //= (b//nbin) #gives us index of a bin the number is in
+  simlen = np.shape(sims)[1] #how long a sim is, but without the start since its not simulated
+  inds = np.argsort(np.argsort(sims, axis = 0), axis = 0)
+  c = int(b//nbin) #some technicality without which this falls apart
+  inds //= c
+  inds = inds.astype(int)
   alpha = b/nbin
-  betas = np.zeros((length, nbin, nbin))
-  #probgrid = np.zeros((length, nbin, nbin))
-  for t in range(length - 1):
-    step_array = inds[:,t:t+2]
+  betas = np.zeros((simlen, nbin, nbin))
+  for tt in range(simlen - 1): #DLACZEGO TO DO KURWY NEDZY DZIALA W COLABIE A TUTAJ MOWI YYY NO CHYBA 2 WSZEDZIE CO NIE? 
+    step_array = inds[:,tt:tt+2]
     beta = np.zeros((nbin,nbin))
-    np.add.at(beta, [step_array[:,0], step_array[:,1]], 1)
-    betas[t,:,:] = beta 
+    np.add.at(beta, (step_array[:,0], step_array[:,1]), 1)
+    betas[tt,:,:] = beta 
   probgrid = betas/alpha
-  return probgrid, inds, sims
+  hsims = sims.copy()
+  hsims.sort(axis = 0)
+  return probgrid, sims, hsims
 
-#@title Wycena klasami
-# DOKONCZYC TLUMACZENIE NA KLASY: STANALEM NA OGARNIANIU CZYM JEST BARRIER IND FUNC
-def price(option,sims, inds, probs):
-  r = option.r
+
+def SS(option, sims, probs, hsims):
+  r = option.underlying.r
   T = option.T
+  simlen = np.shape(sims)[1]
   dt = T/simlen
-  Time = np.arange(dt, T + dt, dt)
   nbin = np.shape(probs)[1]
-  simlen = option.underlying.values_per_year
   b = np.shape(sims)[0]
   Grid = np.zeros((nbin,simlen))
   alpha = b//nbin
+  Time = np.arange(dt, T + dt, dt)
   hs = np.zeros((nbin, simlen)) #they will represent the payoffs of each bin 
-  hsims = sims.copy()
-  hsims.sort(axis = 0, kind = "mergesort")
-  #PAYOFFY PONIZEJ
-  condition = option.barrier_ind_func(sims, np.tile(Time,(b,1)))
-  Pay = option.payoff_func(sims, np.tile(Time,(b,1))) * condition
+  condition = option.barrier_ind_func(hsims, np.tile(Time,(b,1)))
+  Pay = option.payoff_func(hsims, np.tile(Time,(b,1))) * condition
   for k in range(nbin):
-    hs[k,:] = np.sum(payoffs[alpha*k:alpha*(k+1),:], axis = 0)/alpha
+    hs[k,:] = np.sum(Pay[alpha*k:alpha*(k+1),:], axis = 0)/alpha
   Grid[:,-1] = hs[:,-1]
-  for t in np.arange(simlen-2,-1,-1):
+  for tt in np.arange(simlen-2,-1,-1):
     for j in range(nbin):
-      prob = probs[t, j,:]
-      V = prob*Grid[:,t+1]
-      EV = sum(V)
-      Grid[j,t] = max(EV, hs[j,t]) 
+      prob = probs[tt, j,:]
+      V = prob*Grid[:,tt+1]
+      EV = sum(V)*np.exp(-r*dt)
+      Grid[j,tt] = max(EV, hs[j,tt]) 
   return np.mean(Grid[:,0])
 

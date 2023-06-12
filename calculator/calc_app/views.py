@@ -9,6 +9,7 @@ from option import Option
 from stochastic_mesh_func import *
 from Longstaff_Schwartz import LS
 from finite_difference import FD
+from State_Space import *
 
 class Index(View):
     def get(self, request):
@@ -75,7 +76,9 @@ class Index(View):
             LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
             FD_call, _, _, _ = FD(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),400)
             FD_put, _, _, _ = FD(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),400)
-
+            Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
+            SS_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
+            SS_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
             context = {'output':{
                                 'stochastic_mesh':{'name':'Stochastic Mesh', 'href':'sm', 
                                                     'call':{'price':round(V_sm_call, rounding)},#, 'plots': SM_graphs(V_sm_call, bools_call, mesh_call, Q_call, T)}, 
@@ -84,6 +87,10 @@ class Index(View):
                                 'longstaff-schwartz':{'name':'Longstaff-Schwartz', 'href':'ls', 
                                                       'call':{'price':round(LS_call, rounding)}, 
                                                       'put':{'price':round(LS_put, rounding)}
+                                                     },
+                                'state-space partitioning':{'name':'State-Space Partitioning', 'href':'ss', 
+                                                      'call':{'price':round(SS_call, rounding)}, 
+                                                      'put':{'price':round(SS_put, rounding)}
                                                      },
                                 'finite-difference':{'name':'Finite Difference', 'href':'fd',
                                                      'call':{'price':round(FD_call,rounding)},
