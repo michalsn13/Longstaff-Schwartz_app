@@ -2,4 +2,13 @@
 {% load crispy_forms_tags %}
 {% block content %}
 <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
+<h1>Plots for Longstaff Schwartz results:</h1>
+<h2>    Call</h2>
+{% for p in call %}
+    <img src="data:image/png;base64,{{ p }}" />
+{% endfor %}
+<h2>    Put</h2>
+{% for p in put %}
+    <img src="data:image/png;base64,{{ p }}" />
+{% endfor %}
 {% endblock content %}

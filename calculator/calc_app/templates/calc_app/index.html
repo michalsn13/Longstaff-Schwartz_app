@@ -21,14 +21,21 @@
                         <th scope="col">Method</th>
                         <th scope="col">Call</th>
                         <th scope="col">Put</th>
+                        <th scope="col">Time taken</th>
                     </tr>
                 </thread>
                 <tbody>
                 {% for value in output.values %}
                     <tr>
-                        <th scope="row"><a href="{{ value.href }}">{{ value.name }}</a></th>
+                        {{ form.cleaned_data.method_type }}
+                        {% if value.href == "" %}
+                            <th scope="row">{{ value.name }}</th>
+                        {% else %}
+                            <th scope="row"><a href="{{ value.href }}">{{ value.name }}</a></th>
+                        {% endif %}
                         <th scope="row">{{ value.call.price }}</th>
                         <th scope="row">{{ value.put.price }}</th>
+                        <th scope="row">{{ value.time }}</th>
                     </tr>
                 {% endfor %}
                 </tbody>

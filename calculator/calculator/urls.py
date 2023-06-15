@@ -16,13 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from calc_app.views import Index
+from calc_app.views import Index, sm, ls, ss
 from django.views.generic import TemplateView
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("",Index.as_view(), name='index'),
-    path("sm/",TemplateView.as_view(template_name="calc_app/sm.html"), name='sm'),
-    path("ls/",TemplateView.as_view(template_name="calc_app/ls.html"), name='ls')
+    path("sm/",sm, name='sm'),
+    path("ls/",sm, name='ls'),
+    path("ss/",sm, name='ss')
 ]

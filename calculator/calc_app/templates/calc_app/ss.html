@@ -2,17 +2,13 @@
 {% load crispy_forms_tags %}
 {% block content %}
 <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
-<h1>Plots for Stochastic Mesh results:</h1>
-<div class="container">
-<h2>Call</h2>
+<h1>Plots for State Space Partitioning results:</h1>
+<h2>    Call</h2>
 {% for p in call %}
     <img src="data:image/png;base64,{{ p }}" />
 {% endfor %}
-</div>
-<div class="container">
-<h2>Put</h2>
+<h2>    Put</h2>
 {% for p in put %}
     <img src="data:image/png;base64,{{ p }}" />
 {% endfor %}
-</div>
 {% endblock content %}
