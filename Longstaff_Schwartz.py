@@ -18,7 +18,8 @@ def poly(X,poly_type='Laguerre'):
 def LS(option, b, T_idx=np.nan ,poly_type='Laguerre'):
     r = option.underlying.r
     T = option.T
-    dt = 1/option.underlying.values_per_year
+    S = option.underlying.simulate_Q(b,T,False)
+    dt = T / S.shape[1]
     Time = np.arange(dt, T + dt, dt)
     if np.any(np.isnan(T_idx)):
         T_idx = np.arange(len(Time)-1,-1,-1)
@@ -30,7 +31,6 @@ def LS(option, b, T_idx=np.nan ,poly_type='Laguerre'):
     #0mb_up = b_up*np.exp(-.5826*sig*np.sqrt(T/(len(Time)-1)))
     #mb_down = b_down*np.exp(.5826*sig*np.sqrt(T/(len(Time)-1)))
     ####
-    S = option.underlying.simulate_Q(b,T,False)
     condition = option.barrier_ind_func(S, np.tile(Time,(b,1)))
     Pay = option.payoff_func(S, np.tile(Time,(b,1))) * condition
 

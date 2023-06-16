@@ -1,12 +1,13 @@
 {% extends 'calc_app/base.html' %}
 {% load crispy_forms_tags %}
 {% block content %}
-<a href="{% url 'data' %}" class="btn btn-outline-primary mt-3 mx-3" style="position: absolute; right: 0;">Sims File Calculator</a>
-<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
+<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3" style="position: absolute; right: 0;">GBM Calculator</a>
+<a href="{% url 'data' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
+
 <div class="row mt-10">
     <div class="col-12 col-md-6 mx-md-auto">
-        <h1>American Options price calculator- GBM </h1>
-        <form method="POST">
+        <h1>American Options price calculator- sims from file </h1>
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form | crispy }}
             <p>*- obligatory</p>
@@ -16,7 +17,6 @@
     <div class="col-12 col-md-4 mx-md-auto">
         <h3>Prices for different methods</h3>
         <div class="mt-5">
-            <h4 style="color: #FF0000;">{{ check_message }}</h4>
             <table class="table">
                 <thread>
                     <tr>

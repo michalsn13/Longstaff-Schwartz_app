@@ -1,12 +1,13 @@
 import time
+import os
 
 from django.shortcuts import render
 from django.views import View
-from .forms import OptionForm
+from .forms import OptionForm, DataOptionForm
 from .utils import SM_graphs
 import sys
 sys.path.append('..')
-from underlying import GBM
+from underlying import GBM, DataUnderlying
 from option import Option
 from stochastic_mesh_func import *
 from Longstaff_Schwartz import LS
@@ -49,11 +50,12 @@ class Index(View):
             div = form_dict['div']/100 if div_freq == np.infty else form_dict['div']
             next_div_moment = form_dict['next_div_moment']
             values_per_year = form_dict['values_per_year']
+            
             if form_dict['barrier_type']!='vanilla':
                 direction, outcome = form_dict['barrier_type'].split('_')
-                sign = (-1)**(direction == 'down')
+                sign = (-1)**((direction == 'up')==(outcome == 'in'))
                 barrier_func = lambda X, t : sign*X < sign*form_dict['barrier']
-                barrier_out = True
+                barrier_out = outcome == 'out'
                 barrier = form_dict['barrier']
                 def barrier_func_ls(X,t):
                     X = np.hstack((S0*np.ones((X.shape[0],1)),X))
@@ -62,7 +64,9 @@ class Index(View):
                     sign2 = (-1)**(outcome == 'in')
                     t_out_of_bar = tn[0,np.argmax(sign1*X < sign1*barrier,axis=1)]
                     t_out_of_bar[t_out_of_bar==0] = 1e9
-                    return sign2*t < sign2*t_out_of_bar.reshape((-1,1))
+                    return sign2*t < sign2*t_out_of_bar.reshape((-1,1))   
+                if outcome == 'in':
+                    methods = list(set(methods).intersection(set(['ls'])))
             else:
                 barrier_func_ls = lambda X, t : True
                 barrier_func = lambda X, t : True
@@ -114,7 +118,92 @@ class Index(View):
 
         return render(request, 'calc_app/index.html', context)
 
-        
+
+class DataIndex(View):
+    def get(self, request):
+        initial = {
+            'barrier_type': request.session.get('barrier_type'),
+            'barrier': request.session.get('barrier'),
+            'S0': request.session.get('S0'),
+            'K': request.session.get('K'),
+            'T': request.session.get('T'),
+            'r': request.session.get('r'),
+            'div_freq': request.session.get('div_freq'),
+            'div': request.session.get('div') if request.session.get('div') else 0,
+            'next_div_moment': request.session.get('next_div_moment') if request.session.get('next_div_moment') else 0,
+            'rounding': request.session.get('rounding') if request.session.get('rounding') else 4
+        }
+        form = DataOptionForm(initial = initial)
+        return render(request, 'calc_app/data.html', {'form': form})
+    def post(self, request):
+        form = DataOptionForm(request.POST, request.FILES)
+        context = {'form':form}
+        if form.is_valid():
+            context = {'output':{},
+            'form':form
+            }
+            form_dict = form.cleaned_data
+            csv_file = form_dict['csv_file']
+            with open(f"files/{csv_file.name}", "wb+") as destination:
+                for chunk in csv_file.chunks():
+                    destination.write(chunk)
+            methods = form_dict['method_types']
+            S0 = form_dict['S0']
+            K = form_dict['K']
+            T = form_dict['T']
+            r = form_dict['r']/100
+            div_freq = np.infty if form_dict['div_freq'] == 'infty' else float(form_dict['div_freq'])
+            div = form_dict['div']/100 if div_freq == np.infty else form_dict['div']
+            next_div_moment = form_dict['next_div_moment']
+            
+            if form_dict['barrier_type']!='vanilla':
+                direction, outcome = form_dict['barrier_type'].split('_')
+                sign = (-1)**((direction == 'up')==(outcome == 'in'))
+                barrier_func = lambda X, t : sign*X < sign*form_dict['barrier']
+                barrier_out = outcome == 'out'
+                barrier = form_dict['barrier']
+                def barrier_func_ls(X,t):
+                    X = np.hstack((S0*np.ones((X.shape[0],1)),X))
+                    tn = np.hstack((np.zeros((X.shape[0],1)),t))
+                    sign1 = (-1)**(direction == 'up')
+                    sign2 = (-1)**(outcome == 'in')
+                    t_out_of_bar = tn[0,np.argmax(sign1*X < sign1*barrier,axis=1)]
+                    t_out_of_bar[t_out_of_bar==0] = 1e9
+                    return sign2*t < sign2*t_out_of_bar.reshape((-1,1))   
+                if outcome == 'in':
+                    methods = list(set(methods).intersection(set(['ls'])))
+            else:
+                barrier_func_ls = lambda X, t : True
+                barrier_func = lambda X, t : True
+                barrier_out = False
+            rounding = int(form_dict['rounding'])
+            underlying = DataUnderlying(f"files/{csv_file.name}", S0, r, div = div, div_freq = div_freq, next_div_moment = next_div_moment)
+            payoff_func_call = lambda X, t: np.maximum(X-K, 0)
+            payoff_func_put = lambda X, t: np.maximum(K-X, 0)
+            if 'ls' in methods:
+                t0 = time.time()
+                LS_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
+                LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
+                context['output']['longstaff-schwartz'] = {'name':'Longstaff-Schwartz', 'href':'ls', 'time':f'{time.time() - t0:.4f}s',
+                                                      'call':{'price':round(LS_call, rounding)}, 
+                                                      'put':{'price':round(LS_put, rounding)}
+                                                     }
+            if 'ss' in methods:
+                t0 = time.time()
+                Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
+                SS_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
+                SS_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
+                context['output']['state-space-partitioning'] = {'name':'State-Space Partitioning', 'href':'ss', 'time': f'{time.time() - t0:.4f}s',
+                                                      'call':{'price':round(SS_call, rounding)}, 
+                                                      'put':{'price':round(SS_put, rounding)}
+                                                     }
+            context['check_message'] = "" if underlying.check else "Your sims does not seem to represent a martingale. Don't trust the results."
+            os.remove(f"files/{csv_file.name}")
+        else:
+            print(form.is_valid())
+        return render(request, 'calc_app/data.html', context)
+    
+    
 def sm(request):
     call = request.session.get('sm_call')
     put = request.session.get('sm_put')
