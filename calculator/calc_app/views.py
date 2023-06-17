@@ -197,7 +197,9 @@ class DataIndex(View):
                                                       'call':{'price':round(SS_call, rounding)}, 
                                                       'put':{'price':round(SS_put, rounding)}
                                                      }
-            context['check_message'] = "" if underlying.check else "Your sims does not seem to represent a martingale. Don't trust the results."
+            check_bool, check_p = underlying.check
+            context['check_message'] = f"No reasons to reject null hypothesis about your sims representing a martingale (p-value = {check_p:.4} > alpha)" if check_bool else f"Null hypothesis about your sims representing a martingale got rejected (p-value = {check_p:.4} <= alpha)"
+            context['check_color'] = "#008000" if check_bool else "#FF0000"
             os.remove(f"files/{csv_file.name}")
         else:
             print(form.is_valid())

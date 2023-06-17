@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from scipy.stats import norm
-from statsmodels.tsa.stattools import adfuller
-
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from scipy.stats import chisquare
 
 class GBM:
     def __init__(self, S0, sigma, r, div = 0, div_freq = 1, next_div_moment = 0, values_per_year = 50):
@@ -51,20 +52,28 @@ class DataUnderlying:
         self.check = None
         self.next_div_moment = next_div_moment
     def check_and_set_stationarity(self, sims):
-        setattr(self, "check", False)
+        print(sims.shape)
+        diffs = sims[:,1:] - sims[:,:-1]
+        p_values = []
+        for i in range(diffs.shape[0]):
+            p_values.append(acorr_ljungbox(diffs[i, :], lags=[5], return_df=True)['lb_pvalue'][5])
+        n, _, _ = plt.hist(p_values, bins = 10)
+        p_uniform = chisquare(n)[1]
+        alpha = 0.05
+        setattr(self, "check", (p_uniform > alpha, p_uniform))
     def simulate_Q(self, size, T, quantile = False):
         old_sims = self.basis
         old_size, values_per_all = old_sims.shape
         dt = T / values_per_all
         time_moments = np.arange(dt, T + dt, dt)
         old_sims_discounted = old_sims * np.exp(- self.r * time_moments)
-        self.check_and_set_stationarity(old_sims_discounted)
+        if not self.check:
+            self.check_and_set_stationarity(old_sims_discounted)
         if size > old_size:
             returns = (old_sims[:,1:]/old_sims[:,:-1]).flatten()
             sims = np.random.choice(returns, size = (size - old_size, values_per_all))
             sims = self.S0 * np.cumprod(sims, axis = 1)
             sims = np.concatenate((old_sims, sims))
-            self.basis = sims
         else:
             sims = old_sims
         if self.div > 0:
