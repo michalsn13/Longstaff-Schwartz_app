@@ -8,7 +8,7 @@ sys.path.append('..')
 from django.shortcuts import render
 from django.views import View
 from .forms import OptionForm, DataOptionForm, ConvOptionForm
-from .utils import SM_graphs, conv_graphs
+from .utils import *
 
 from underlying import GBM, DataUnderlying
 from option import Option
@@ -103,13 +103,17 @@ class Index(View):
                                                      }
             if 'ss' in methods:
                 t0 = time.time()
-                Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
-                SS_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
-                SS_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
+                Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=10**5)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
+                SS_call, Grid_call, Hs_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
+                SS_put, Grid_put, Hs_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
                 context['output']['state-space-partitioning'] = {'name':'State-Space Partitioning', 'href':'ss', 'time': f'{time.time() - t0:.4f}s',
                                                       'call':{'price':round(SS_call, rounding)}, 
                                                       'put':{'price':round(SS_put, rounding)}
                                                      }
+                #plots
+                request.session['ss_call'] = SS_graphs(Grid_call, Hs_call, Hsims, T)
+                request.session['ss_put'] = SS_graphs(Grid_put, Hs_put, Hsims, T)
+                #endplots
             if 'fd' in methods:
                 t0 = time.time()
                 FD_call, _, _, _ = FD(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),400)
@@ -194,12 +198,17 @@ class DataIndex(View):
             if 'ss' in methods:
                 t0 = time.time()
                 Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
-                SS_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
-                SS_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
+                SS_call, Grid_call, Hs_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
+                SS_put, Grid_put, Hs_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
                 context['output']['state-space-partitioning'] = {'name':'State-Space Partitioning', 'href':'ss', 'time': f'{time.time() - t0:.4f}s',
                                                       'call':{'price':round(SS_call, rounding)}, 
                                                       'put':{'price':round(SS_put, rounding)}
                                                      }
+                #plots
+                request.session['ss_call'] = SS_graphs(Grid_call, Hs_call, Hsims, T)
+                request.session['ss_put'] = SS_graphs(Grid_put, Hs_put, Hsims, T)
+                #endplots
+                
             check_bool, check_p = underlying.check
             context['check_message'] = f"No reasons to reject null hypothesis about your sims representing a martingale (p-value = {check_p:.4} > alpha)" if check_bool else f"Null hypothesis about your sims representing a martingale got rejected (p-value = {check_p:.4} <= alpha)"
             context['check_color'] = "#008000" if check_bool else "#FF0000"
@@ -289,8 +298,8 @@ class ConvIndex(View):
                     results_put.loc[e, 'ls'] = price_put
                 if 'ss' in methods:
                     Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)
-                    price_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
-                    price_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
+                    price_call, Grid_call, Hs_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
+                    price_put, Grid_put, Hs_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
                     results_call.loc[e, 'ss'] = price_call
                     results_put.loc[e, 'ss'] = price_put
                 return results_call, results_put

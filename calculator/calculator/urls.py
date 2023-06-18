@@ -26,7 +26,7 @@ urlpatterns = [
     path("data/",DataIndex.as_view(), name='data'),
     path("conv/",ConvIndex.as_view(), name='conv'),
     path("sm/",sm, name='sm'),
-    path("ls/",sm, name='ls'),
-    path("ss/",sm, name='ss'),
-    path("fd/",sm, name='fd')
+    path("ls/",ls, name='ls'),
+    path("ss/",ss, name='ss'),
+    path("fd/",fd, name='fd')
 ]

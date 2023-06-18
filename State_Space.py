@@ -10,7 +10,7 @@ def prob(option, nbin,b):
   inds = inds.astype(int)
   alpha = b/nbin
   betas = np.zeros((simlen, nbin, nbin))
-  for tt in range(simlen - 1): #DLACZEGO TO DO KURWY NEDZY DZIALA W COLABIE A TUTAJ MOWI YYY NO CHYBA 2 WSZEDZIE CO NIE? 
+  for tt in range(simlen - 1):
     step_array = inds[:,tt:tt+2]
     beta = np.zeros((nbin,nbin))
     np.add.at(beta, (step_array[:,0], step_array[:,1]), 1)
@@ -43,5 +43,5 @@ def SS(option, sims, probs, hsims):
       V = prob*Grid[:,tt+1]
       EV = sum(V)*np.exp(-r*dt)
       Grid[j,tt] = max(EV, hs[j,tt]) 
-  return np.mean(Grid[:,0])
-
+  price = float(np.mean(Grid[:,0])*np.exp(-r*dt))
+  return price, Grid, hs

@@ -68,4 +68,47 @@ def conv_graphs(Vs_call, ref_call, Vs_put, ref_put):
     img_b64_2 = base64.b64encode(imgdata.getvalue()).decode()
     matplotlib.pyplot.close()
     return [img_b64_1, img_b64_2]
-    
+
+#SS
+
+def SS_graphs(grid, hs, hsims, T):
+    nbins = np.shape(grid)[0]
+    b = np.shape(hsims)[0]
+    values_per_life = np.shape(grid)[1]
+    c = b//nbins
+    inds = np.arange(0, b, c)
+    binvalues = hsims[inds,:]
+    optimals = np.zeros(np.shape(grid))
+    optimals[grid>hs] = 1    
+    time_matrix = np.tile(np.arange(1, values_per_life + 1) / values_per_life * T , (nbins,1))
+    fig, axs = matplotlib.pyplot.subplots()
+    sb.set_style("ticks",{'axes.grid' : True})
+    g = sb.scatterplot(x = time_matrix.flatten(), y = binvalues.flatten(),hue = grid.flatten(), linewidth=0, ax = axs, palette = sb.color_palette("rocket", as_cmap=True))
+    g.set_title('Option price based on underlying value in time')
+    g.set_xlabel('Time (years)')
+    g.set_xlim([0,T*1.1])
+    g.set_ylabel('Underlying price')
+    g.set_ylim([hsims.min()*0.9, hsims.max()*1.1])
+    axs.legend([],[], frameon=False)
+    norm = matplotlib.pyplot.Normalize(np.floor(grid.min()), np.ceil(grid.max()))
+    cmap = sb.color_palette("rocket", as_cmap=True)
+    ss = matplotlib.pyplot.cm.ScalarMappable(cmap=cmap, norm=norm)
+    ss.set_array([])
+    cax = fig.add_axes([axs.get_position().x1+0.001, axs.get_position().y0, 0.03, axs.get_position().height])
+    cbar = axs.figure.colorbar(ss, cax=cax)
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    img_b64_3 = base64.b64encode(imgdata.getvalue()).decode()   
+    fig, axs = matplotlib.pyplot.subplots()
+    sb.set_style("ticks",{'axes.grid' : True})
+    g = sb.scatterplot(x = time_matrix.flatten(), y = binvalues.flatten(), hue = optimals.flatten(), linewidth=0, palette = {1:'#84b701',0:'#448ee4'}, ax = axs)
+    g.set_title('Moments of early exercise based on underlying value in time')
+    g.set_xlabel('Time (years)')
+    g.set_xlim([0,T*1.1])
+    g.set_ylabel('Underlying price')
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    img_b64_4 = base64.b64encode(imgdata.getvalue()).decode()
+    matplotlib.pyplot.close()
+    #data = imgdata.getvalue()
+    return [img_b64_3, img_b64_4]
