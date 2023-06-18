@@ -40,5 +40,32 @@ def SM_graphs(V, bools, mesh, Q, T):
     fig.savefig(imgdata, format='png')
     img_b64_2 = base64.b64encode(imgdata.getvalue()).decode()
     matplotlib.pyplot.close()
-    #data = imgdata.getvalue()
     return [img_b64_1, img_b64_2]
+
+def conv_graphs(Vs_call, ref_call, Vs_put, ref_put):
+    exercises = Vs_call.index
+    
+    fig, axs = matplotlib.pyplot.subplots()
+    g = Vs_call.plot(style = '-o', ax = axs)
+    g.legend(loc = 'best')
+    g.set_title(f'Price convergence depending on number of exercises per year\nFinite Diff ref price: {ref_call:.4f}')
+    g.set_xlabel('log2(Number of exercises per year / 12)')
+    g.set_ylabel('Price')
+    g.hlines(xmin = min(exercises), xmax = max(exercises), y = ref_call, linestyles = 'dashed', color = 'black')
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    img_b64_1 = base64.b64encode(imgdata.getvalue()).decode()
+    
+    fig, axs = matplotlib.pyplot.subplots()
+    g = Vs_put.plot(style = '-o', ax = axs)
+    g.legend(loc = 'best')
+    g.set_title(f'Price convergence depending on number of exercises per year\nFinite Diff ref price: {ref_put:.4f}')
+    g.set_xlabel('log2(Number of exercises per year / 12)')
+    g.set_ylabel('Price')
+    g.hlines(xmin = min(exercises), xmax = max(exercises), y = ref_put, linestyles = 'dashed', color = 'black')
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    img_b64_2 = base64.b64encode(imgdata.getvalue()).decode()
+    matplotlib.pyplot.close()
+    return [img_b64_1, img_b64_2]
+    

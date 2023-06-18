@@ -4,13 +4,17 @@
 <div>
     <a onClick="javascript:history.go(-1);" class="btn btn-outline-primary mt-3 mx-3" style="position: absolute; right: 0; color: #FF0000">Reset</a>
 </div>
-<h1>Plots for Longstaff Schwartz results:</h1>
-<h2>    Call</h2>
+<h1>Plots for Finite Difference results:</h1>
+<div class="container">
+<h2>Call</h2>
 {% for p in call %}
     <img src="data:image/png;base64,{{ p }}" />
 {% endfor %}
-<h2>    Put</h2>
+</div>
+<div class="container">
+<h2>Put</h2>
 {% for p in put %}
     <img src="data:image/png;base64,{{ p }}" />
 {% endfor %}
+</div>
 {% endblock content %}

@@ -1,12 +1,18 @@
 {% extends 'calc_app/base.html' %}
 {% load crispy_forms_tags %}
 {% block content %}
-<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3" style="position: absolute; right: 0;">GBM Calculator</a>
-<a href="{% url 'data' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
+<div>
+    <a href="{% url 'data' %}" class="btn btn-outline-primary mt-3 mx-3" style="position: absolute; right: 0; color: #FF0000">Reset</a>
+</div>
+<div>
+    <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">GBM Calculator</a>
+    <a href="{% url 'conv' %}" class="btn btn-outline-primary mt-3 mx-3">Convergence Calculator</a>
+</div>
 
 <div class="row mt-10">
     <div class="col-12 col-md-6 mx-md-auto">
-        <h1>American Options price calculator- sims from file </h1>
+        <h1>American Options price calculator</h1>
+        <h2>General underlying pricing</h2>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form | crispy }}
@@ -31,11 +37,7 @@
                 {% for value in output.values %}
                     <tr>
                         {{ form.cleaned_data.method_type }}
-                        {% if value.href == "" %}
-                            <th scope="row">{{ value.name }}</th>
-                        {% else %}
-                            <th scope="row"><a href="{{ value.href }}">{{ value.name }}</a></th>
-                        {% endif %}
+                        <th scope="row"><a href="{{ value.href }}">{{ value.name }}</a></th>
                         <th scope="row">{{ value.call.price }}</th>
                         <th scope="row">{{ value.put.price }}</th>
                         <th scope="row">{{ value.time }}</th>

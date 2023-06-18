@@ -1,7 +1,9 @@
 {% extends 'calc_app/base.html' %}
 {% load crispy_forms_tags %}
 {% block content %}
-<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Reset</a>
+<div>
+    <a onClick="javascript:history.go(-1);" class="btn btn-outline-primary mt-3 mx-3" style="position: absolute; right: 0; color: #FF0000">Reset</a>
+</div>
 <h1>Plots for Stochastic Mesh results:</h1>
 <div class="container">
 <h2>Call</h2>

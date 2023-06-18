@@ -1,12 +1,15 @@
 import time
 import os
+import pandas as pd
+from multiprocess import Pool
+import sys
+sys.path.append('..')
 
 from django.shortcuts import render
 from django.views import View
-from .forms import OptionForm, DataOptionForm
-from .utils import SM_graphs
-import sys
-sys.path.append('..')
+from .forms import OptionForm, DataOptionForm, ConvOptionForm
+from .utils import SM_graphs, conv_graphs
+
 from underlying import GBM, DataUnderlying
 from option import Option
 from stochastic_mesh_func import *
@@ -204,7 +207,111 @@ class DataIndex(View):
         else:
             print(form.is_valid())
         return render(request, 'calc_app/data.html', context)
-    
+
+class ConvIndex(View):
+    def get(self, request):
+        initial = {
+            'barrier_type': request.session.get('barrier_type'),
+            'barrier': request.session.get('barrier'),
+            'S0': request.session.get('S0'),
+            'K': request.session.get('K'),
+            'T': request.session.get('T'),
+            'sigma': request.session.get('sigma'),
+            'r': request.session.get('r'),
+            'div_freq': request.session.get('div_freq'),
+            'div': request.session.get('div') if request.session.get('div') else 0,
+            'next_div_moment': request.session.get('next_div_moment') if request.session.get('next_div_moment') else 0,
+            'rounding': request.session.get('rounding') if request.session.get('rounding') else 4,
+            'processors': request.session.get('processors') if request.session.get('processors') else 5
+        }
+        form = ConvOptionForm(initial = initial)
+        return render(request, 'calc_app/conv.html', {'form': form})
+    def post(self, request):
+        form = ConvOptionForm(request.POST)
+        context = {'form':form}
+        if form.is_valid():
+            context = {'output':{'exer':{}},
+            'form':form
+            }
+            form_dict = form.cleaned_data
+            methods = form_dict['method_types']
+            S0 = form_dict['S0']
+            K = form_dict['K']
+            T = form_dict['T']
+            sigma = form_dict['sigma']/100
+            r = form_dict['r']/100
+            div_freq = np.infty if form_dict['div_freq'] == 'infty' else float(form_dict['div_freq'])
+            div = form_dict['div']/100 if div_freq == np.infty else form_dict['div']
+            next_div_moment = form_dict['next_div_moment']
+            
+            if form_dict['barrier_type']!='vanilla':
+                direction, outcome = form_dict['barrier_type'].split('_')
+                sign = (-1)**((direction == 'up')==(outcome == 'in'))
+                barrier_func = lambda X, t : sign*X < sign*form_dict['barrier']
+                barrier_out = outcome == 'out'
+                barrier = form_dict['barrier']
+                def barrier_func_ls(X,t):
+                    X = np.hstack((S0*np.ones((X.shape[0],1)),X))
+                    tn = np.hstack((np.zeros((X.shape[0],1)),t))
+                    sign1 = (-1)**(direction == 'up')
+                    sign2 = (-1)**(outcome == 'in')
+                    t_out_of_bar = tn[0,np.argmax(sign1*X < sign1*barrier,axis=1)]
+                    t_out_of_bar[t_out_of_bar==0] = 1e9
+                    return sign2*t < sign2*t_out_of_bar.reshape((-1,1))   
+                if outcome == 'in':
+                    methods = list(set(methods).intersection(set(['ls'])))
+            else:
+                barrier_func_ls = lambda X, t : True
+                barrier_func = lambda X, t : True
+                barrier_out = False
+            rounding = int(form_dict['rounding'])
+            processors = int(form_dict['processors'])
+
+            payoff_func_call = lambda X, t: np.maximum(X-K, 0)
+            payoff_func_put = lambda X, t: np.maximum(K-X, 0)
+            
+            exercises = range(0, 6)
+
+            def pool_f(e):
+                results_call = pd.DataFrame(index = [e], columns = methods)
+                results_put = pd.DataFrame(index = [e], columns = methods)                
+                underlying = GBM(S0, sigma, r, div = div, div_freq = div_freq, next_div_moment = next_div_moment, values_per_year = 12 * 2 ** e)
+                if 'sm' in methods:
+                    price_call, _, _, _ = stochastic_mesh(Option(underlying, payoff_func_call, T, barrier_func, barrier_out), 1000)
+                    price_put, _, _, _ = stochastic_mesh(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), 1000)
+                    results_call.loc[e, 'sm'] = price_call
+                    results_put.loc[e, 'sm'] = price_put
+                    
+                if 'ls' in methods:
+                    price_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
+                    price_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
+                    results_call.loc[e, 'ls'] = price_call
+                    results_put.loc[e, 'ls'] = price_put
+                if 'ss' in methods:
+                    Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)
+                    price_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
+                    price_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
+                    results_call.loc[e, 'ss'] = price_call
+                    results_put.loc[e, 'ss'] = price_put
+                return results_call, results_put
+            with Pool(processors) as pool:
+                pool_results = pool.map(pool_f, exercises)
+                
+            Vs_call = pd.concat([i[0] for i in pool_results])
+            Vs_put = pd.concat([i[1] for i in pool_results])
+            
+            underlying = GBM(S0, sigma, r, div = div, div_freq = div_freq, next_div_moment = next_div_moment, values_per_year = 10)
+            ref_call, _, _, _ = FD(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),400)
+            ref_put, _, _, _ = FD(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),400)
+            
+            names = {'ls':'Longstaff-Schwartz', 'sm': 'Stochastic Mesh', 'ss': 'State Space Partitioning'}
+            Vs_call.columns = [names[idx] for idx in Vs_call.columns]
+            Vs_put.columns = [names[idx] for idx in Vs_put.columns]
+            
+            plots = conv_graphs(Vs_call, ref_call, Vs_put, ref_put)
+            context['output']['exer']['call'] = plots[0]
+            context['output']['exer']['put'] = plots[1]
+        return render(request, 'calc_app/conv.html', context)
     
 def sm(request):
     call = request.session.get('sm_call')
@@ -212,11 +319,16 @@ def sm(request):
     return render(request, "calc_app/sm.html", {"call": call, 'put': put})
 
 def ls(request):
-    call = request.session.get('sm_call')
-    put = request.session.get('sm_put')
+    call = request.session.get('ls_call')
+    put = request.session.get('ls_put')
     return render(request, "calc_app/ls.html", {"call": call, 'put': put})
 
 def ss(request):
-    call = request.session.get('sm_call')
-    put = request.session.get('sm_put')
+    call = request.session.get('ss_call')
+    put = request.session.get('ss_put')
     return render(request, "calc_app/ss.html", {"call": call, 'put': put})
+
+def fd(request):
+    call = request.session.get('fd_call')
+    put = request.session.get('fd_put')
+    return render(request, "calc_app/fd.html", {"call": call, 'put': put})

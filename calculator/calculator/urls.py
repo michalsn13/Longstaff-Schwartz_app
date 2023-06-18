@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from calc_app.views import Index, DataIndex, sm, ls, ss
+from calc_app.views import Index, DataIndex, ConvIndex, sm, ls, ss, fd
 from django.views.generic import TemplateView
 
 
@@ -24,7 +24,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("",Index.as_view(), name='index'),
     path("data/",DataIndex.as_view(), name='data'),
+    path("conv/",ConvIndex.as_view(), name='conv'),
     path("sm/",sm, name='sm'),
     path("ls/",sm, name='ls'),
-    path("ss/",sm, name='ss')
+    path("ss/",sm, name='ss'),
+    path("fd/",sm, name='fd')
 ]
