@@ -37,7 +37,7 @@
                 {% for value in output.values %}
                     <tr>
                         {{ form.cleaned_data.method_type }}
-                        <th scope="row"><a href="{{ value.href }}">{{ value.name }}</a></th>
+                        <th scope="row"><a href="../{{ value.href }}">{{ value.name }}</a></th>
                         <th scope="row">{{ value.call.price }}</th>
                         <th scope="row">{{ value.put.price }}</th>
                         <th scope="row">{{ value.time }}</th>
