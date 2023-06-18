@@ -36,6 +36,7 @@ def SM_graphs(V, bools, mesh, Q, T):
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T*1.1])
     g.set_ylabel('Underlying price')
+    g.set_ylim([mesh.min()*0.9, mesh.max()*1.1])
     imgdata = BytesIO()
     fig.savefig(imgdata, format='png')
     img_b64_2 = base64.b64encode(imgdata.getvalue()).decode()
