@@ -9,19 +9,19 @@ def FD(option,n=400,dt=np.nan,american=True):
     if np.isnan(dt):
         dt = 1/(2*sigma**2 * n**2)
 
-    k = int(T/dt + 1)
     Time = np.arange(0,T+dt,dt)
+    k = len(Time)
     S = np.repeat(np.arange(1,n+1).reshape((-1,1))/n * 3*S0,k,axis=1)
     ds = S[1,0] - S[0,0]
     div = option.underlying.div
     if div>0:
         div_interval = 1/option.underlying.div_freq
-        if div_interval != 0:
+        if div_interval > 0:
             next_div_moment = option.underlying.next_div_moment
             while next_div_moment < T:
                 S[:,Time <= next_div_moment] += div
                 next_div_moment += div_interval
-        div = 0
+            div = 0
 
     D = np.zeros((n-2,k))
     G = np.zeros((n-2,k))
