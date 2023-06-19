@@ -95,8 +95,8 @@ class Index(View):
                 #endplots
             if 'ls' in methods:
                 t0 = time.time()
-                LS_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
-                LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
+                LS_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(5e4))
+                LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(5e4))
                 context['output']['longstaff-schwartz'] = {'name':'Longstaff-Schwartz', 'href':'ls', 'time':f'{time.time() - t0:.4f}s',
                                                       'call':{'price':round(LS_call, rounding)}, 
                                                       'put':{'price':round(LS_put, rounding)}
@@ -116,13 +116,16 @@ class Index(View):
                 #endplots
             if 'fd' in methods:
                 t0 = time.time()
-                FD_call, _, _, _ = FD(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),400)
-                FD_put, _, _, _ = FD(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),400)
-                context['output']['finite-difference'] = {'name':'Finite Difference', 'href':'','time':f'{time.time() - t0:.4f}s',
+                FD_call, V_c, E_c, S_c,  = FD(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),400)
+                FD_put, V_p, E_p, S_p = FD(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),400)
+                context['output']['finite-difference'] = {'name':'Finite Difference', 'href':'fd','time':f'{time.time() - t0:.4f}s',
                                                      'call':{'price':round(FD_call,rounding)},
                                                      'put':{'price':round(FD_put,rounding)}
                                                     }
-
+                #plots
+                request.session['fd_call'] = FD_graphs(S0, E_c, S_c, V_c, T)
+                request.session['fd_put'] = FD_graphs(S0, E_p, S_p, V_p, T)
+                #endplots
         return render(request, 'calc_app/index.html', context)
 
 

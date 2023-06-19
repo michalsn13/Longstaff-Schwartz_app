@@ -5,12 +5,12 @@ def FD(option,n=400,dt=np.nan,american=True):
     T = option.T
     S0 = option.underlying.S0
     sigma = option.underlying.sigma
-    
+
     if np.isnan(dt):
         dt = 1/(2*sigma**2 * n**2)
 
+    k = int(T/dt + 1)
     Time = np.arange(0,T+dt,dt)
-    k = len(Time)
     S = np.repeat(np.arange(1,n+1).reshape((-1,1))/n * 3*S0,k,axis=1)
     ds = S[1,0] - S[0,0]
     div = option.underlying.div
@@ -63,5 +63,7 @@ def FD(option,n=400,dt=np.nan,american=True):
     alf_up = (val_up - S0)/(val_up-val_dn)
     alf_dn = (S0 - val_dn)/(val_up-val_dn)
     val = alf_up*V[id_dn,0] + alf_dn*V[id_up,0]
+    Exc += 0
+    Exc[barr==0] = -1
 
     return val,V,Exc,S
