@@ -34,14 +34,15 @@ def SS(option, sims, probs, hsims):
   hs = np.zeros((nbin, simlen)) #they will represent the payoffs of each bin 
   condition = option.barrier_ind_func(hsims, np.tile(Time,(b,1)))
   Pay = option.payoff_func(hsims, np.tile(Time,(b,1))) * condition
+  Pay[condition==False] = -0.00000000001#doesnt really change the price but is used to make making plots easier
   for k in range(nbin):
-    hs[k,:] = np.sum(Pay[alpha*k:alpha*(k+1),:], axis = 0)/alpha
+    hs[k,:] = np.sum(Pay[alpha*k:alpha*(k+1),:], axis = 0)/alpha #mean payoff of each bin is calculated here
   Grid[:,-1] = hs[:,-1]
   for tt in np.arange(simlen-2,-1,-1):
     for j in range(nbin):
       prob = probs[tt, j,:]
       V = prob*Grid[:,tt+1]
       EV = sum(V)*np.exp(-r*dt)
-      Grid[j,tt] = max(EV, hs[j,tt]) 
+      Grid[j,tt] = max(EV, hs[j,tt],0) 
   price = float(np.mean(Grid[:,0])*np.exp(-r*dt))
   return price, Grid, hs

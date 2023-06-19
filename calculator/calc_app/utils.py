@@ -78,10 +78,12 @@ def SS_graphs(grid, hs, hsims, T):
     b = np.shape(hsims)[0]
     values_per_life = np.shape(grid)[1]
     c = b//nbins
-    inds = np.arange(0, b, c)
+    inds = np.arange(c//2, b, c)
     binvalues = hsims[inds,:]
     optimals = np.zeros(np.shape(grid))
-    optimals[grid>hs] = 1    
+    optimals[(hs>=grid)*(hs>0)] = 1
+    optimals[hs < 0] = -1
+    optimals = np.array(pd.DataFrame(optimals).apply(lambda row: row.map({1:'exercise',0:'wait',-1:'option out'}),axis = 1))
     time_matrix = np.tile(np.arange(1, values_per_life + 1) / values_per_life * T , (nbins,1))
     fig, axs = matplotlib.pyplot.subplots()
     sb.set_style("ticks",{'axes.grid' : True})
@@ -90,7 +92,7 @@ def SS_graphs(grid, hs, hsims, T):
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T*1.1])
     g.set_ylabel('Underlying price')
-    g.set_ylim([hsims.min()*0.9, hsims.max()*1.1])
+    #g.set_ylim([hsims.min()*0.9, hsims.max()*1.1])
     axs.legend([],[], frameon=False)
     norm = matplotlib.pyplot.Normalize(np.floor(grid.min()), np.ceil(grid.max()))
     cmap = sb.color_palette("rocket", as_cmap=True)
@@ -103,7 +105,7 @@ def SS_graphs(grid, hs, hsims, T):
     img_b64_3 = base64.b64encode(imgdata.getvalue()).decode()   
     fig, axs = matplotlib.pyplot.subplots()
     sb.set_style("ticks",{'axes.grid' : True})
-    g = sb.scatterplot(x = time_matrix.flatten(), y = binvalues.flatten(), hue = optimals.flatten(), linewidth=0, palette = {1:'#84b701',0:'#448ee4'}, ax = axs)
+    g = sb.scatterplot(x = time_matrix.flatten(), y = binvalues.flatten(), hue = optimals.flatten(), linewidth=0, palette = {'exercise':'#84b701','wait':'#448ee4','option out':'#cf524e'}, ax = axs)
     g.set_title('Moments of early exercise based on underlying value in time')
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T*1.1])
@@ -114,6 +116,7 @@ def SS_graphs(grid, hs, hsims, T):
     matplotlib.pyplot.close()
     #data = imgdata.getvalue()
     return [img_b64_3, img_b64_4]
+
 
 ## FD
 
