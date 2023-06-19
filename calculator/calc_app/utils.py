@@ -32,7 +32,7 @@ def SM_graphs(V, bools, mesh, Q, T):
     img_b64_1 = base64.b64encode(imgdata.getvalue()).decode()   
     fig, axs = matplotlib.pyplot.subplots()
     sb.set_style("ticks",{'axes.grid' : True})
-    g = sb.scatterplot(x = time_matrix.flatten(), y = mesh.flatten(), hue = bools.flatten(), linewidth=0, palette = {'exercise':'#84b701','wait':'#448ee4','option out':'#cf524e'}, ax = axs)
+    g = sb.scatterplot(x = time_matrix.flatten(), y = mesh.flatten(), hue = bools.flatten(), linewidth=0, palette = {'exercise':'red','wait':'lightblue','option out':'black'}, ax = axs)
     g.set_title('Moments of early exercise based on underlying value in time')
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T*1.1])
@@ -105,7 +105,7 @@ def SS_graphs(grid, hs, hsims, T):
     img_b64_3 = base64.b64encode(imgdata.getvalue()).decode()   
     fig, axs = matplotlib.pyplot.subplots()
     sb.set_style("ticks",{'axes.grid' : True})
-    g = sb.scatterplot(x = time_matrix.flatten(), y = binvalues.flatten(), hue = optimals.flatten(), linewidth=0, palette = {'exercise':'#84b701','wait':'#448ee4','option out':'#cf524e'}, ax = axs)
+    g = sb.scatterplot(x = time_matrix.flatten(), y = binvalues.flatten(), hue = optimals.flatten(), linewidth=0, palette = {'exercise':'red','wait':'lightblue','option out':'black'}, ax = axs)
     g.set_title('Moments of early exercise based on underlying value in time')
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T*1.1])
@@ -137,8 +137,8 @@ def FD_graphs(S0, bools0, mesh0, Q0, T, k=150):
     bools = np.hstack((bools,bools0[:,:-1][:,div_wh]))
     Q = np.hstack((Q,Q0[:,:-1][:,div_wh]))
 
-    size = bools*1000+1
-    size[size<0] = 1
+    size = bools*50+20
+    size[size<0] = 20
     bools = np.array(pd.DataFrame(bools).apply(lambda row: row.map({1:'exercise',0:'wait',-1:'option out'}),axis = 1))
     inba = (mesh>0.7*S0) & (mesh<1.3*S0)
     time_matrix = time_matrix[inba]
@@ -169,7 +169,7 @@ def FD_graphs(S0, bools0, mesh0, Q0, T, k=150):
 
     fig, axs = plt.subplots()
     sb.set_style("ticks",{'axes.grid' : True})
-    g = sb.scatterplot(size=size,x = time_matrix, y = mesh, hue = bools, linewidth=0, palette = {'exercise':'red','wait':'lightblue','option out':'black'}, ax = axs)
+    g = sb.scatterplot(s=size,x = time_matrix, y = mesh, hue = bools, linewidth=0, palette = {'exercise':'red','wait':'lightblue','option out':'black'}, ax = axs)
     g.set_title('Moments of early exercise based on underlying value in time')
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T])

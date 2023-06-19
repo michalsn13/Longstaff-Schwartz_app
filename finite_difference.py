@@ -64,6 +64,7 @@ def FD(option,n=400,dt=np.nan,american=True):
     alf_dn = (S0 - val_dn)/(val_up-val_dn)
     val = alf_up*V[id_dn,0] + alf_dn*V[id_up,0]
     Exc += 0
+    Exc[Pay[:,-1]>0,-1] = 1 
     Exc[barr==0] = -1
 
     return val,V,Exc,S
