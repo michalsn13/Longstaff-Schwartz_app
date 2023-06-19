@@ -300,7 +300,7 @@ class ConvIndex(View):
                     results_call.loc[e, 'ls'] = price_call
                     results_put.loc[e, 'ls'] = price_put
                 if 'ss' in methods:
-                    Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)
+                    Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 200,b=10**5)
                     price_call, Grid_call, Hs_call = SS(Option(underlying, payoff_func_call, T, barrier_func, barrier_out),Sims,  Probs, Hsims)
                     price_put, Grid_put, Hs_put = SS(Option(underlying, payoff_func_put, T, barrier_func, barrier_out),Sims, Probs, Hsims)
                     results_call.loc[e, 'ss'] = price_call
