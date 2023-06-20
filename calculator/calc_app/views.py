@@ -74,6 +74,7 @@ class Index(View):
                 barrier_func_ls = lambda X, t : True
                 barrier_func = lambda X, t : True
                 barrier_out = False
+                barrier = -1
             rounding = int(form_dict['rounding'])
             if values_per_year:
                 underlying = GBM(S0, sigma, r, div = div, div_freq = div_freq, next_div_moment = next_div_moment, values_per_year = values_per_year)
@@ -95,12 +96,20 @@ class Index(View):
                 #endplots
             if 'ls' in methods:
                 t0 = time.time()
-                LS_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(5e4))
-                LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(5e4))
+                LS_call, Ec, Sc, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
+                LS_put, Ep, Sp, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
                 context['output']['longstaff-schwartz'] = {'name':'Longstaff-Schwartz', 'href':'ls', 'time':f'{time.time() - t0:.4f}s',
                                                       'call':{'price':round(LS_call, rounding)}, 
                                                       'put':{'price':round(LS_put, rounding)}
                                                      }
+                #plots
+                Ec[~barrier_func(Sc[:,:,0],0)] = -1
+                Ep[~barrier_func(Sp[:,:,0],0)] = -1
+                Ep[np.abs(Sp[:,:,0]-barrier)<0.3] = 1
+                Ec[np.abs(Sc[:,:,0]-barrier)<0.3] = 1
+                request.session['ls_call'] = LS_graphs(Ec, Sc, T)
+                request.session['ls_put'] = LS_graphs(Ep, Sp, T)
+                #endplots
             if 'ss' in methods:
                 t0 = time.time()
                 Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=10**5)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
@@ -186,18 +195,27 @@ class DataIndex(View):
                 barrier_func_ls = lambda X, t : True
                 barrier_func = lambda X, t : True
                 barrier_out = False
+                barrier = -1
             rounding = int(form_dict['rounding'])
             underlying = DataUnderlying(f"files/{csv_file.name}", S0, r, div = div, div_freq = div_freq, next_div_moment = next_div_moment)
             payoff_func_call = lambda X, t: np.maximum(X-K, 0)
             payoff_func_put = lambda X, t: np.maximum(K-X, 0)
             if 'ls' in methods:
                 t0 = time.time()
-                LS_call, _, _, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
-                LS_put, _, _, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
+                LS_call, Ec, Sc, _ = LS(Option(underlying, payoff_func_call, T, barrier_func_ls, barrier_out),int(2e4))
+                LS_put, Ep, Sp, _ = LS(Option(underlying, payoff_func_put, T, barrier_func_ls, barrier_out),int(2e4))
                 context['output']['longstaff-schwartz'] = {'name':'Longstaff-Schwartz', 'href':'ls', 'time':f'{time.time() - t0:.4f}s',
                                                       'call':{'price':round(LS_call, rounding)}, 
                                                       'put':{'price':round(LS_put, rounding)}
                                                      }
+                #plots
+                Ec[~barrier_func(Sc[:,:,0],0)] = -1
+                Ep[~barrier_func(Sp[:,:,0],0)] = -1
+                Ep[np.abs(Sp[:,:,0]-barrier)<0.3] = 1
+                Ec[np.abs(Sc[:,:,0]-barrier)<0.3] = 1
+                request.session['ls_call'] = LS_graphs(Ec, Sc, T)
+                request.session['ls_put'] = LS_graphs(Ep, Sp, T)
+                #endplots
             if 'ss' in methods:
                 t0 = time.time()
                 Probs, Sims, Hsims = prob(Option(underlying, payoff_func_put, T, barrier_func, barrier_out), nbin = 500,b=5*10**4)#if you write it like 1e5 it breaks because of float and I dont have the patience to fix it again
@@ -276,6 +294,7 @@ class ConvIndex(View):
                 barrier_func_ls = lambda X, t : True
                 barrier_func = lambda X, t : True
                 barrier_out = False
+                barrier = -1
             rounding = int(form_dict['rounding'])
             processors = int(form_dict['processors'])
 

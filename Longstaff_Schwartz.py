@@ -61,4 +61,5 @@ def LS(option, b, T_idx=np.nan ,poly_type='Laguerre'):
 
     when = np.argmax(Excercise,axis=1) 
     res = Pay[np.arange(n),when]*np.exp(-r*Time[when])
-    return np.mean(res), Excercise, S*s0, np.std([np.mean(res[int(n/50)*i:int(n/50)*(i+1)]) for i in range(50)])
+    Excercise[option.payoff_func(S[:,-1,0], 0)<=0,-1] = False
+    return np.mean(res), Excercise.astype(int), S*s0, np.std([np.mean(res[int(n/50)*i:int(n/50)*(i+1)]) for i in range(50)])

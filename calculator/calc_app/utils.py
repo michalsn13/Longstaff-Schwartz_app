@@ -159,7 +159,7 @@ def FD_graphs(S0, bools0, mesh0, Q0, T, k=150):
     cmap = sb.color_palette("rocket", as_cmap=True)
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cax = fig.add_axes([axs.get_position().x1+0.05, axs.get_position().y0, 0.06, axs.get_position().height])
+    cax = fig.add_axes([axs.get_position().x1+0.05, axs.get_position().y0, 0.03, axs.get_position().height])
     axs.figure.colorbar(sm, cax=cax)
 
     imgdata = BytesIO()
@@ -174,6 +174,76 @@ def FD_graphs(S0, bools0, mesh0, Q0, T, k=150):
     g.set_xlabel('Time (years)')
     g.set_xlim([0,T])
     g.set_ylim([mesh.min(), mesh.max()])
+    g.set_ylabel('Underlying price')
+
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    img_b64_2 = base64.b64encode(imgdata.getvalue()).decode()
+    matplotlib.pyplot.close()
+    return [img_b64_1, img_b64_2]
+
+## LS
+
+def LS_graphs(bools0, mesh0, T, k=100):
+    mesh0 = mesh0.reshape((-1,mesh0.shape[1]))
+    id_S = mesh0.argsort(axis=0)
+    bools0 = bools0+0
+    b, values_per_life = mesh0.shape
+    time = np.arange(1, values_per_life + 1) / values_per_life * T
+    time_matrix0 = np.tile(time, (b,1))
+    time_matrix = np.tile(time , (k,1))
+
+    mesh = np.zeros((k,values_per_life))
+    bools = np.zeros((k,values_per_life))
+
+    exc = bools0.copy().astype(int)
+    exc[:,-1] = 1
+    exc[bools0==-1] = 1
+    exce = np.argmax(exc,axis=1)
+    fig, axs = plt.subplots()
+    plt.hist(time[exce],bins=50)
+    plt.title('Distribution of moments of early exercise')
+    plt.grid()
+    plt.xlabel('Time (years)')
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    img_b64_1 = base64.b64encode(imgdata.getvalue()).decode()   
+
+    for i in range(mesh0.shape[1]):
+        mesh0[:,i] = mesh0[id_S[:,i],i]
+        bools0[:,i] = bools0[id_S[:,i],i]
+
+        bins = np.linspace(mesh0[100,i],mesh0[-100,i]+.01,k)
+        id = np.digitize(mesh0[:,i],bins)
+        _, ind = np.unique(id,return_index=True)
+        ind = ind[1:]
+        if len(ind)<k:
+            ind = np.hstack((ind,np.repeat(int(b/2),k-len(ind))))
+        mesh[:,i] = mesh0[ind,i]
+        bools[:,i] = bools0[ind,i]
+
+    mx = mesh[-1,:].reshape((1,-1))
+    mn = mesh[0,:].reshape((1,-1))
+    extr = bools0[:10000,:]==1
+    mesh1 = mesh0[:10000,:]
+    wh = (mesh1 <= mx) & (mesh1 >=mn) & extr
+    mesh1 = mesh1[extr]
+    time1 = time_matrix0[:10000,:][extr]
+
+    size = bools*10+20
+    size[size<0] = 20
+    bools = np.array(pd.DataFrame(bools).apply(lambda row: row.map({1:'exercise',0:'wait',-1:'option out'}),axis = 1))
+    xs = np.hstack((time_matrix.flatten(),time1))
+    ys = np.hstack((mesh.flatten(),mesh1))
+    hues = np.hstack((bools.flatten(),np.repeat('exercise',len(time1))))
+    size = np.hstack((size.flatten(),np.repeat(25,len(time1))))
+
+    fig, axs = plt.subplots()
+    sb.set_style("ticks",{'axes.grid' : True})
+    g = sb.scatterplot(s=size,x = xs, y = ys, hue = hues, linewidth=0, palette = {'exercise':'red','wait':'lightblue','option out':'black'}, ax = axs)
+    g.set_title('Moments of early exercise based on underlying value in time')
+    g.set_xlabel('Time (years)')
+    g.set_xlim([0,T*1.1])
     g.set_ylabel('Underlying price')
 
     imgdata = BytesIO()
