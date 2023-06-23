@@ -12,10 +12,10 @@ from .utils import *
 
 from underlying import GBM, DataUnderlying
 from option import Option
-from stochastic_mesh_func import *
-from Longstaff_Schwartz import LS
+from stochastic_mesh import *
+from longstaff_schwartz import LS
 from finite_difference import FD
-from State_Space import *
+from state_space import *
 
 class Index(View):
     def get(self, request):
